@@ -32,10 +32,4 @@ class TokenResponse(BaseModel):
     token_type: str
 
 
-class ConversationEntry(BaseModel):
-    user_response: str
-    ai_therapist_response: str
 
-
-class SaveConversation(BaseModel):
-    conversation: List[ConversationEntry]

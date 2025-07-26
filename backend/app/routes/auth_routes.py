@@ -9,8 +9,9 @@ from backend.app.schemas.auth_schemas import (
     TokenResponse,
     RefreshTokenRequest,
     LogoutRequest,
-    ConversationEntry
 )
+from backend.app.schemas.conversation_schemas import ConversationEntry
+
 from backend.app.utils.user_handling_token import (
     hash_password,
     verify_password,
