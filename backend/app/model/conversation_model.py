@@ -1,63 +1,54 @@
-from transformers import (
-    GPT2LMHeadModel,
-    GPT2Tokenizer,
-    AutoTokenizer,
-    AutoModelForSequenceClassification
-)
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import os
 import torch
-import torch.nn.functional as F
-from typing import Tuple, List
 
 
-labels = ["sadness", "joy", "love", "anger", "fear", "surprise"]
+base_dir = os.path.dirname(os.path.abspath(__file__))
+emotion_model_path = os.path.join(base_dir, "..", "..", "roberta-emotion-model")
+
+print("Using Roberta model path:", emotion_model_path)
+print("Exists:", os.path.exists(emotion_model_path))
 
 
-def load_emotion_model(model_path="./roberta-emotion-pytorch"):
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
-    return tokenizer, model
+emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_model_path)
+emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
+emotion_model.eval()
+
+generator = pipeline(
+    "text-generation",
+    model=os.path.join(base_dir, "..", "..", "therapist-gpt-distilgpt2-emotion"),
+    tokenizer="distilgpt2"
+)
+
+conversation_history = []
 
 
-def load_conversation_model(model_path="./therapist-gpt-distilgpt2"):
-    tokenizer = GPT2Tokenizer.from_pretrained(model_path)
-    model = GPT2LMHeadModel.from_pretrained(model_path)
-    return tokenizer, model
-
-
-def predict_emotion(user_input: str, tokenizer, model) -> Tuple[str, List[Tuple[str, float]]]:
-    inputs = tokenizer(user_input, return_tensors="pt", truncation=True, padding=True)
+def predict_emotion(text):
+    inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     with torch.no_grad():
-        outputs = model(**inputs)
-    logits = outputs.logits
-    probs = F.softmax(logits, dim=-1).squeeze()
-    top_pred_id = torch.argmax(probs).item()
-
-    top_label = labels[top_pred_id]
-    top_predictions = [(labels[i], float(probs[i])) for i in torch.topk(probs, 3).indices.tolist()]
-    return top_label, top_predictions
+        outputs = emotion_model(**inputs)
+        probs = torch.nn.functional.softmax(outputs.logits, dim=1)
+        predicted_class = torch.argmax(probs, dim=1).item()
+    emotion_labels = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise']
+    return emotion_labels[predicted_class]
 
 
-def generate_therapist_response(emotion: str, user_input: str, model, tokenizer) -> str:
-    prompt = f"User (feeling {emotion}): {user_input}\nTherapist:"
-    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+def generate_therapist_reply(user_input):
+    emotion = predict_emotion(user_input)
 
-    output_ids = model.generate(
-        input_ids=input_ids,
-        max_length=150,
-        num_return_sequences=1,
-        no_repeat_ngram_size=2,
-        pad_token_id=tokenizer.eos_token_id,
-        do_sample=True,
-        top_k=50,
-        top_p=0.95,
-        temperature=0.9
-    )
+    user_tagged = f"<emotion={emotion}> User: {user_input}"
+    conversation_history.append(user_tagged)
 
-    output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-    response = output_text.split("Therapist:")[-1].strip()
-    return response
+    history_block = "\n".join(conversation_history[-6:])
+    prompt = f"{history_block}\nTherapist:"
 
+    response = generator(prompt, max_length=150, do_sample=True, top_k=50)[0]['generated_text']
 
-def get_prediction_generate_response(emotion: str, user_input: str) -> str:
-    gpt_tokenizer, gpt_model = load_conversation_model()
-    return generate_therapist_response(emotion, user_input, gpt_model, gpt_tokenizer)
+    if "Therapist:" in response:
+        generated_reply = response.split("Therapist:")[-1].strip()
+    else:
+        generated_reply = response.strip()
+
+    conversation_history.append(generated_reply)
+
+    return generated_reply

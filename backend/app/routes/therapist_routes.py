@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from backend.app.model.conversation_model import (
     predict_emotion,
-    get_prediction_generate_response,
-    load_emotion_model
+    generate_therapist_reply
+
 )
 
 from backend.app.schemas.conversation_schemas import (
@@ -14,19 +14,17 @@ from backend.app.schemas.conversation_schemas import (
 
 therapist_router = APIRouter(prefix="/therapist", tags=["Therapist"])
 
-tokenizer, model = load_emotion_model()
-
 
 @therapist_router.post("/predict-emotion", response_model=EmotionPredictionResponse)
 def predicting_emotion(user: EmotionPredictionRequest):
-    final_prediction, top_3 = predict_emotion(user.user_response, tokenizer, model)
+    print(predict_emotion(user.user_response))  # See if it prints a tuple
+    final_prediction = predict_emotion(user.user_response)
     return {
-        "Final_prediction": final_prediction,
-        "Top_3_predictions": top_3
+        "Final_prediction": final_prediction
     }
 
 
 @therapist_router.post("/generate_response", response_model=TherapistResponse)
 def generating_therapist_response(user: EmotionRequest):
-    response = get_prediction_generate_response(user.final_prediction, user.user_response)
+    response = generate_therapist_reply(user.user_response)
     return {"therapist_response": response}
