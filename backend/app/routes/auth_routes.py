@@ -130,7 +130,7 @@ def logging_out(
     return {"message": "Access and refresh tokens revoked (blacklisted)."}
 
 
-@auth_router.post("/save_conversation")
+@auth_router.post("/save-conversation")
 def save_conversation(entry: ConversationEntry, user=Depends(get_current_user)):
     user_id = str(user["_id"])
     user_doc = conversation_collection.find_one({"user_id": user_id})
@@ -151,7 +151,7 @@ def save_conversation(entry: ConversationEntry, user=Depends(get_current_user)):
     return {"message": "Conversation saved successfully."}
 
 
-@auth_router.get("/get_conversation")
+@auth_router.get("/get-conversation")
 def get_conversations(user=Depends(get_current_user)):
     user_id = str(user["_id"])
     user_doc = conversation_collection.find_one({"user_id": user_id})
