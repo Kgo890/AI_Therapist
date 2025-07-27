@@ -28,7 +28,7 @@ export default function SearchAppBar() {
   const drawerItems = [
     { text: "Dashboard", route: "/dashboard" },
     { text: "Reset Password", route: "/reset-password" },
-    {text: "Conversation History" route: "/history"}
+    {text: "Conversation History" route: "/history"},
     { text: "Logout", action: handleLogout },
   ];
 
