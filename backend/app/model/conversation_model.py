@@ -14,7 +14,7 @@ emotion_model.eval()
 generator = pipeline(
     task="text-generation",
     model="Kgo890/therapist-gpt-distilgpt2-emotion",
-    tokenizer="distilgpt2"
+    tokenizer="Kgo890/therapist-gpt-distilgpt2-emotion"
 )
 
 
