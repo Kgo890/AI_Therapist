@@ -1,7 +1,8 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from pymongo import DESCENDING
 from backend.app.db.mongo import conversation_collection
-import os
+from transformers import pipeline
+from functools import lru_cache
 import torch
 import re
 
@@ -11,11 +12,20 @@ emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_model_path)
 emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
 emotion_model.eval()
 
-generator = pipeline(
-    task="text-generation",
-    model="Kgo890/therapist-gpt-distilgpt2-emotion",
-    tokenizer="distilgpt2"
-)
+
+@lru_cache()
+def get_generator():
+    return pipeline(
+        "text-generation",
+        model="your-model",
+        tokenizer="your-tokenizer"
+    )
+
+
+def generate_response(prompt: str):
+    generator = get_generator()
+    result = generator(prompt, max_new_tokens=256)
+    return result[0]["generated_text"]
 
 
 def predict_emotion(text):
@@ -61,6 +71,7 @@ def generate_therapist_reply(user_input, predicted_emotion, user_id):
     new_turn = f"<emotion={predicted_emotion}> User: {user_input}"
     prompt = f"{history_block}\n{new_turn}\nTherapist:"
 
+    generator = get_generator()
     response = generator(
         prompt,
         max_length=60,
