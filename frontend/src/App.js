@@ -13,7 +13,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/history" element={<HistoryPage />} /> //needs some work
       </Routes>
     </Router>
   );
