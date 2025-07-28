@@ -19,6 +19,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://ai-therapist-kaden-gores-projects.vercel.app",
+        "https://ai-therapist-fezkuw7qz-kaden-gores-projects.vercel.app",
         "http://localhost:3000"
     ],
     allow_credentials=True,
