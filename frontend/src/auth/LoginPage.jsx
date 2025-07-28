@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from "../auth/axios";
+import api from "../utils/axios";
 import {
   Container,
   Typography,
@@ -66,7 +66,7 @@ export default function Login() {
     >
       <Container maxWidth="xs" sx={{ backgroundColor: "rgba(255,255,255,0.95)", padding: 4, borderRadius: 2 }}>
         <Typography variant="h5" align="center" gutterBottom>
-          DCU News Login
+          AI Therapist App
         </Typography>
 
         <TextField

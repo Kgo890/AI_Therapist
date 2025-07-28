@@ -1,14 +1,12 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+from pymongo import DESCENDING
+from backend.app.db.mongo import conversation_collection
 import os
 import torch
-
+import re
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 emotion_model_path = os.path.join(base_dir, "..", "..", "roberta-emotion-model")
-
-print("Using Roberta model path:", emotion_model_path)
-print("Exists:", os.path.exists(emotion_model_path))
-
 
 emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_model_path)
 emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
@@ -20,35 +18,74 @@ generator = pipeline(
     tokenizer="distilgpt2"
 )
 
-conversation_history = []
-
 
 def predict_emotion(text):
     inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     with torch.no_grad():
         outputs = emotion_model(**inputs)
         probs = torch.nn.functional.softmax(outputs.logits, dim=1)
-        predicted_class = torch.argmax(probs, dim=1).item()
+
+    predicted_class = torch.argmax(probs, dim=1).item()
     emotion_labels = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise']
-    return emotion_labels[predicted_class]
+
+    top3_indices = torch.topk(probs, 3).indices[0].tolist()
+    top3_probs = torch.topk(probs, 3).values[0].tolist()
+    top3 = [(emotion_labels[i], round(top3_probs[idx], 4)) for idx, i in enumerate(top3_indices)]
+
+    return emotion_labels[predicted_class], top3
 
 
-def generate_therapist_reply(user_input):
-    emotion = predict_emotion(user_input)
+def fetch_conversation_history(user_id):
+    last_convos = conversation_collection.find(
+        {"user_id": user_id},
+        {"_id": 0, "conversation": 1}
+    ).sort("timestamp", DESCENDING).limit(3)
 
-    user_tagged = f"<emotion={emotion}> User: {user_input}"
-    conversation_history.append(user_tagged)
+    history = []
+    for convo in reversed(list(last_convos)):
+        for message in convo['conversation']:
+            role = message['role']
+            text = message['text']
+            if role == "user":
+                emotion = message.get('emotion')
+                if emotion:
+                    history.append(f"<emotion={emotion}> User: {text}")
+                else:
+                    history.append(f"User: {text}")
+            elif role == "therapist":
+                history.append(f"Therapist: {text}")
+    return "\n".join(history)
 
-    history_block = "\n".join(conversation_history[-6:])
-    prompt = f"{history_block}\nTherapist:"
 
-    response = generator(prompt, max_length=150, do_sample=True, top_k=50)[0]['generated_text']
+def generate_therapist_reply(user_input, predicted_emotion, user_id):
+    history_block = fetch_conversation_history(user_id)
+    new_turn = f"<emotion={predicted_emotion}> User: {user_input}"
+    prompt = f"{history_block}\n{new_turn}\nTherapist:"
+
+    response = generator(
+        prompt,
+        max_length=60,
+        do_sample=True,
+        top_k=40,
+        top_p=0.95,
+        temperature=0.8,
+        repetition_penalty=1.2
+    )[0]['generated_text']
 
     if "Therapist:" in response:
-        generated_reply = response.split("Therapist:")[-1].strip()
+        generated_reply = response.split("Therapist:")[-1]
     else:
         generated_reply = response.strip()
 
-    conversation_history.append(generated_reply)
+    generated_reply = generated_reply.split("User:")[0]
 
-    return generated_reply
+    cleaned_reply = (
+        generated_reply.replace("\\n", " ")
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .replace("  ", " ")
+        .strip()
+    )
+
+    first_sentence = re.split(r'(?<=[.!?]) +', cleaned_reply)[0]
+    return first_sentence.strip()

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from collections import deque
-from backend.app.db.mongo import users_collection, blacklist_collection, conversation_collection
+from backend.app.db.mongo import users_collection, blacklist_collection
 from backend.app.schemas.auth_schemas import (
     UserRegister,
     UserLogin,
@@ -10,8 +9,6 @@ from backend.app.schemas.auth_schemas import (
     RefreshTokenRequest,
     LogoutRequest,
 )
-from backend.app.schemas.conversation_schemas import ConversationEntry
-
 from backend.app.utils.user_handling_token import (
     hash_password,
     verify_password,
@@ -54,7 +51,6 @@ async def register_user(user: UserRegister):
 
 @auth_router.post("/login")
 def login(user_credentials: UserLogin):
-
     user = users_collection.find_one({"email": user_credentials.email})
     if not user:
         print("User not found")
@@ -130,31 +126,12 @@ def logging_out(
     return {"message": "Access and refresh tokens revoked (blacklisted)."}
 
 
-@auth_router.post("/save-conversation")
-def save_conversation(entry: ConversationEntry, user=Depends(get_current_user)):
-    user_id = str(user["_id"])
-    user_doc = conversation_collection.find_one({"user_id": user_id})
-
-    if user_doc:
-        conversation = deque(user_doc["conversation"], maxlen=3)
-        conversation.appendleft(entry.model_dump())
-        conversation_collection.update_one(
-            {"user_id": user_id},
-            {"$set": {"conversation": list(conversation)}}
-        )
-    else:
-        conversation_collection.insert_one({
-            "user_id": user_id,
-            "conversation": [entry.model_dump()]
-        })
-
-    return {"message": "Conversation saved successfully."}
-
-
-@auth_router.get("/get-conversation")
-def get_conversations(user=Depends(get_current_user)):
-    user_id = str(user["_id"])
-    user_doc = conversation_collection.find_one({"user_id": user_id})
-    if user_doc:
-        return user_doc["conversation"]
-    return {"message": "No conversation found."}
+@auth_router.get("/user-info")
+async def get_user_info(current_user=Depends(get_current_user)):
+    user = users_collection.find_one({"email": current_user["email"]})
+    if user:
+        return {
+            "username": user.get("username"),
+            "email": user.get("email")
+        }
+    return {"username": "", "email": ""}

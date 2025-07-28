@@ -12,6 +12,7 @@ class EmotionPredictionResponse(BaseModel):
 
 
 class EmotionRequest(BaseModel):
+    user_id: str
     final_prediction: str
     user_response: str
 
@@ -20,10 +21,19 @@ class TherapistResponse(BaseModel):
     therapist_response: str
 
 
-class ConversationEntry(BaseModel):
-    user_response: str
-    ai_therapist_response: str
+class ConversationItem(BaseModel):
+    role: str
+    text: str
+    emotion: str | None = None
 
 
-class SaveConversation(BaseModel):
-    conversation: List[ConversationEntry]
+class SaveConversationRequest(BaseModel):
+    user_id: str
+    user_message: str
+    therapist_reply: str
+    emotion: str
+
+
+class SavedConversationResponse(BaseModel):
+    user_id: str
+    conversation: List[ConversationItem]

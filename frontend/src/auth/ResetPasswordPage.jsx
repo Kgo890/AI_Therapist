@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from "../auth/axios";
+import api from "../utils/axios";
 import {
   Container,
   Typography,
