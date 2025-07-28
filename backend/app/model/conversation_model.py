@@ -1,7 +1,6 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from pymongo import DESCENDING
 from backend.app.db.mongo import conversation_collection
-from transformers import pipeline
 from functools import lru_cache
 import torch
 import re

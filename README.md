@@ -58,8 +58,7 @@ A full-stack AI-powered mental health chatbot that lets users interact with a th
       - Those two files get connected to the FastApi via routes and then that get sent to the frontend via axios
       - made a mongo file to save the users information in a database 
     
-- Live Demo: https://ai-therapist-kaden-gores-projects.vercel.app/
-
+- Live Demo: https://ai-therapist-fezkuw7qz-kaden-gores-projects.vercel.app
 - Motivation 
   - My motivation for this project was to make something that was both challenging and meaningful. I wanted to push my limits in NLP while also building a project that could provide comfort and support to people, especially those dealing with stress, anxiety, or isolation.
 
