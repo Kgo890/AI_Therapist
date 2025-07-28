@@ -4,6 +4,7 @@ from backend.app.db.mongo import conversation_collection
 from functools import lru_cache
 import torch
 import re
+import os
 
 emotion_model_path = "Kgo890/roberta-emotion-model"
 
@@ -17,7 +18,8 @@ def get_generator():
     return pipeline(
         "text-generation",
         model="Kgo890/therapist-gpt-distilgpt2-emotion",
-        tokenizer="Kgo890/therapist-gpt-distilgpt2-emotion"
+        tokenizer="Kgo890/therapist-gpt-distilgpt2-emotion",
+        use_auth_token=os.getenv("HF_TOKEN")
     )
 
 
