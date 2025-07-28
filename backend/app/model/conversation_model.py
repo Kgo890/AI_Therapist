@@ -5,16 +5,15 @@ import os
 import torch
 import re
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-emotion_model_path = os.path.join(base_dir, "..", "..", "roberta-emotion-model")
+emotion_model_path = "Kgo890/roberta-emotion-model"
 
 emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_model_path)
 emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
 emotion_model.eval()
 
 generator = pipeline(
-    "text-generation",
-    model=os.path.join(base_dir, "..", "..", "therapist-gpt-distilgpt2-emotion"),
+    task="text-generation",
+    model="Kgo890/therapist-gpt-distilgpt2-emotion",
     tokenizer="distilgpt2"
 )
 
