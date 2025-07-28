@@ -17,8 +17,8 @@ emotion_model.eval()
 def get_generator():
     return pipeline(
         "text-generation",
-        model="your-model",
-        tokenizer="your-tokenizer"
+        model="Kgo890/therapist-gpt-distilgpt2-emotion",
+        tokenizer="Kgo890/therapist-gpt-distilgpt2-emotion"
     )
 
 

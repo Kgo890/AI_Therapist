@@ -64,14 +64,13 @@ async def save_conversation_history(data: SaveConversationRequest):
             "emotion": "neutral"
         }
 
-        # Upsert with slice to maintain only latest 3 messages
         conversation_collection.update_one(
             {"user_id": data.user_id},
             {
                 "$push": {
                     "conversation": {
                         "$each": [new_user_entry, therapist_reply],
-                        "$slice": -6  # 3 exchanges = 6 messages
+                        "$slice": -6
                     }
                 }
             },
