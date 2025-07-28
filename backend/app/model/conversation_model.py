@@ -1,30 +1,47 @@
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from pymongo import DESCENDING
 from backend.app.db.mongo import conversation_collection
+from transformers import pipeline
+from functools import lru_cache
+import torch
 import re
 
-# === Temporarily disable Hugging Face model loading ===
-# from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-# import torch
-# from functools import lru_cache
+emotion_model_path = "Kgo890/roberta-emotion-model"
 
-# emotion_model_path = "Kgo890/roberta-emotion-model"
-# emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_model_path)
-# emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
-# emotion_model.eval()
-
-# === TEMPORARY: return dummy emotion and confidence ===
-def predict_emotion(text):
-    return "neutral", [("neutral", 1.0)]
+emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_model_path)
+emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
+emotion_model.eval()
 
 
-# === TEMPORARY: fake text generation model ===
+@lru_cache()
 def get_generator():
-    return lambda prompt, **kwargs: [{"generated_text": "Therapist: I'm here to support you. 😊"}]
+    return pipeline(
+        "text-generation",
+        model="your-model",
+        tokenizer="your-tokenizer"
+    )
+
 
 def generate_response(prompt: str):
     generator = get_generator()
     result = generator(prompt, max_new_tokens=256)
     return result[0]["generated_text"]
+
+
+def predict_emotion(text):
+    inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    with torch.no_grad():
+        outputs = emotion_model(**inputs)
+        probs = torch.nn.functional.softmax(outputs.logits, dim=1)
+
+    predicted_class = torch.argmax(probs, dim=1).item()
+    emotion_labels = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise']
+
+    top3_indices = torch.topk(probs, 3).indices[0].tolist()
+    top3_probs = torch.topk(probs, 3).values[0].tolist()
+    top3 = [(emotion_labels[i], round(top3_probs[idx], 4)) for idx, i in enumerate(top3_indices)]
+
+    return emotion_labels[predicted_class], top3
 
 
 def fetch_conversation_history(user_id):
