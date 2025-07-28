@@ -18,7 +18,7 @@ app = FastAPI(title="AI Therapist")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://data-structures-visualizer-r4qe.vercel.app/",
+        "https://data-structures-visualizer-r4qe.vercel.app",
         "http://localhost:3000"
     ],
     allow_credentials=True,
